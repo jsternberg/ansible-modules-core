@@ -77,7 +77,7 @@ options:
       - Kernel id for the EC2 instance
     required: false
     default: null
-    aliases: []    
+    aliases: []
   spot_price:
     description:
       - The spot price you are bidding. Only applies for an autoscaling group with spot instances.
@@ -116,6 +116,12 @@ options:
     default: false
     aliases: []
     version_added: "1.8"
+  include_hash:
+    description:
+      - Include a hash of the params in the launch configuration name
+    required: false
+    default: false
+    aliases: []
 extends_documentation_fragment: aws
 """
 
@@ -179,6 +185,12 @@ def create_launch_config(connection, module):
     instance_profile_name = module.params.get('instance_profile_name')
     ebs_optimized = module.params.get('ebs_optimized')
     bdm = BlockDeviceMapping()
+
+    if module.params.pop('include_hash'):
+        import hashlib
+        import json
+        m = hashlib.md5(json.dumps(module.params, sort_keys=True))
+        name = '{}-{}'.format(name, m.hexdigest())
 
     if volumes:
         for volume in volumes:
@@ -251,7 +263,8 @@ def main():
             ebs_optimized=dict(default=False, type='bool'),
             associate_public_ip_address=dict(type='bool'),
             instance_monitoring=dict(default=False, type='bool'),
-            assign_public_ip=dict(type='bool')
+            assign_public_ip=dict(type='bool'),
+            include_hash=dict(default=False, type='bool'),
         )
     )
 
